@@ -79,33 +79,70 @@ namespace RKClassesApi.Controllers
             return Ok(results);
         }
 
-        [HttpGet("announcements")]
-        public IActionResult GetAnnouncements()
-        {
-            var announcements = new List<AnnouncementModel>();
-            using (var connection = _connectionFactory.CreateConnection())
-            {
-                var command = connection.CreateCommand() as SqlCommand;
-                command.CommandText = "SELECT TitleEn, TitleHi, ContentEn, ContentHi, DatePosted FROM Announcements ORDER BY DatePosted DESC";
+        // [HttpGet("announcements")]
+        // public IActionResult GetAnnouncements()
+        // {
+        //     var announcements = new List<AnnouncementModel>();
+        //     using (var connection = _connectionFactory.CreateConnection())
+        //     {
+        //         var command = connection.CreateCommand() as SqlCommand;
+        //         command.CommandText = "SELECT TitleEn, TitleHi, ContentEn, ContentHi, DatePosted FROM Announcements ORDER BY DatePosted DESC";
                 
-                connection.Open();
-                using (var reader = command.ExecuteReader())
+        //         connection.Open();
+        //         using (var reader = command.ExecuteReader())
+        //         {
+        //             while (reader.Read())
+        //             {
+        //                 announcements.Add(new AnnouncementModel
+        //                 {
+        //                     TitleEn = reader["TitleEn"].ToString()!,
+        //                     TitleHi = reader["TitleHi"].ToString()!,
+        //                     ContentEn = reader["ContentEn"].ToString()!,
+        //                     ContentHi = reader["ContentHi"].ToString()!,
+        //                     DatePosted = Convert.ToDateTime(reader["DatePosted"])
+        //                 });
+        //             }
+        //         }
+        //     }
+        //     return Ok(announcements);
+        // }
+        [HttpGet("announcements")]
+public IActionResult GetAnnouncements()
+{
+    try
+    {
+        var announcements = new List<AnnouncementModel>();
+
+        using (var connection = _connectionFactory.CreateConnection())
+        {
+            var command = connection.CreateCommand() as SqlCommand;
+            command.CommandText = "SELECT TitleEn, TitleHi, ContentEn, ContentHi, DatePosted FROM Announcements ORDER BY DatePosted DESC";
+
+            connection.Open();
+
+            using (var reader = command.ExecuteReader())
+            {
+                while (reader.Read())
                 {
-                    while (reader.Read())
+                    announcements.Add(new AnnouncementModel
                     {
-                        announcements.Add(new AnnouncementModel
-                        {
-                            TitleEn = reader["TitleEn"].ToString()!,
-                            TitleHi = reader["TitleHi"].ToString()!,
-                            ContentEn = reader["ContentEn"].ToString()!,
-                            ContentHi = reader["ContentHi"].ToString()!,
-                            DatePosted = Convert.ToDateTime(reader["DatePosted"])
-                        });
-                    }
+                        TitleEn = reader["TitleEn"].ToString()!,
+                        TitleHi = reader["TitleHi"].ToString()!,
+                        ContentEn = reader["ContentEn"].ToString()!,
+                        ContentHi = reader["ContentHi"].ToString()!,
+                        DatePosted = Convert.ToDateTime(reader["DatePosted"])
+                    });
                 }
             }
-            return Ok(announcements);
         }
+
+        return Ok(announcements);
+    }
+    catch (Exception ex)
+    {
+        return StatusCode(500, ex.ToString());
+    }
+}
 
         [HttpGet("classes")]
         public IActionResult GetClasses()
