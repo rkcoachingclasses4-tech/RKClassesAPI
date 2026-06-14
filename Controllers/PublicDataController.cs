@@ -41,21 +41,22 @@ namespace RKClassesApi.Controllers
         }
 
         [HttpGet("results")]
-        public IActionResult GetResults(int classLevel, string subject)
+        public IActionResult GetResults(int classLevel, string subject, string session = "")
         {
             var results = new List<ResultModel>();
             using (var connection = _connectionFactory.CreateConnection())
             {
                 var command = connection.CreateCommand() as SqlCommand;
-                // Only return results belonging to the currently active academic session
                 command.CommandText = @"SELECT e.StudentName, e.RollNo, e.ClassLevel, e.Subject, e.Marks, e.OverallPercentage, e.AcademicSession, e.ResultStatus 
                                        FROM ExamResults e
-                                       INNER JOIN AcademicSessions s ON e.AcademicSession = s.Name AND s.IsActive = 1
-                                       WHERE e.ClassLevel = @ClassLevel AND e.Subject = @Subject
+                                       LEFT JOIN AcademicSessions s ON e.AcademicSession = s.Name
+                                       WHERE e.ClassLevel = @ClassLevel AND e.Subject = @Subject 
+                                       AND (@Session = '' OR s.Id = CAST(@Session AS INT))
                                        ORDER BY e.Marks DESC";
                 
                 command.Parameters.AddWithValue("@ClassLevel", classLevel);
                 command.Parameters.AddWithValue("@Subject", subject);
+                command.Parameters.AddWithValue("@Session", session ?? string.Empty);
 
                 connection.Open();
                 using (var reader = command.ExecuteReader())
@@ -79,70 +80,33 @@ namespace RKClassesApi.Controllers
             return Ok(results);
         }
 
-        // [HttpGet("announcements")]
-        // public IActionResult GetAnnouncements()
-        // {
-        //     var announcements = new List<AnnouncementModel>();
-        //     using (var connection = _connectionFactory.CreateConnection())
-        //     {
-        //         var command = connection.CreateCommand() as SqlCommand;
-        //         command.CommandText = "SELECT TitleEn, TitleHi, ContentEn, ContentHi, DatePosted FROM Announcements ORDER BY DatePosted DESC";
-                
-        //         connection.Open();
-        //         using (var reader = command.ExecuteReader())
-        //         {
-        //             while (reader.Read())
-        //             {
-        //                 announcements.Add(new AnnouncementModel
-        //                 {
-        //                     TitleEn = reader["TitleEn"].ToString()!,
-        //                     TitleHi = reader["TitleHi"].ToString()!,
-        //                     ContentEn = reader["ContentEn"].ToString()!,
-        //                     ContentHi = reader["ContentHi"].ToString()!,
-        //                     DatePosted = Convert.ToDateTime(reader["DatePosted"])
-        //                 });
-        //             }
-        //         }
-        //     }
-        //     return Ok(announcements);
-        // }
         [HttpGet("announcements")]
-public IActionResult GetAnnouncements()
-{
-    try
-    {
-        var announcements = new List<AnnouncementModel>();
-
-        using (var connection = _connectionFactory.CreateConnection())
+        public IActionResult GetAnnouncements()
         {
-            var command = connection.CreateCommand() as SqlCommand;
-            command.CommandText = "SELECT TitleEn, TitleHi, ContentEn, ContentHi, DatePosted FROM Announcements ORDER BY DatePosted DESC";
-
-            connection.Open();
-
-            using (var reader = command.ExecuteReader())
+            var announcements = new List<AnnouncementModel>();
+            using (var connection = _connectionFactory.CreateConnection())
             {
-                while (reader.Read())
+                var command = connection.CreateCommand() as SqlCommand;
+                command.CommandText = "SELECT TitleEn, TitleHi, ContentEn, ContentHi, DatePosted FROM Announcements ORDER BY DatePosted DESC";
+                
+                connection.Open();
+                using (var reader = command.ExecuteReader())
                 {
-                    announcements.Add(new AnnouncementModel
+                    while (reader.Read())
                     {
-                        TitleEn = reader["TitleEn"].ToString()!,
-                        TitleHi = reader["TitleHi"].ToString()!,
-                        ContentEn = reader["ContentEn"].ToString()!,
-                        ContentHi = reader["ContentHi"].ToString()!,
-                        DatePosted = Convert.ToDateTime(reader["DatePosted"])
-                    });
+                        announcements.Add(new AnnouncementModel
+                        {
+                            TitleEn = reader["TitleEn"].ToString()!,
+                            TitleHi = reader["TitleHi"].ToString()!,
+                            ContentEn = reader["ContentEn"].ToString()!,
+                            ContentHi = reader["ContentHi"].ToString()!,
+                            DatePosted = Convert.ToDateTime(reader["DatePosted"])
+                        });
+                    }
                 }
             }
+            return Ok(announcements);
         }
-
-        return Ok(announcements);
-    }
-    catch (Exception ex)
-    {
-        return StatusCode(500, ex.ToString());
-    }
-}
 
         [HttpGet("classes")]
         public IActionResult GetClasses()
@@ -200,7 +164,7 @@ public IActionResult GetAnnouncements()
             using (var connection = _connectionFactory.CreateConnection())
             {
                 var command = connection.CreateCommand() as SqlCommand;
-                command.CommandText = "SELECT Id, Name, IsActive FROM AcademicSessions WHERE IsActive = 1 ORDER BY Name DESC";
+                command.CommandText = "SELECT Id, Name, IsActive FROM AcademicSessions ORDER BY Name DESC";
                 connection.Open();
                 using (var reader = command.ExecuteReader())
                 {
